@@ -113,9 +113,17 @@ void calcule_consignes_moteurs(
   float &consigne_moteur_A, float &consigne_moteur_B, float &consigne_moteur_C, float &consigne_moteur_D)
 {
   // Mise à l'échelle des consignes
-  consigne_x *= RAYON_ROUES * VITESSE_MAX_MOTEURS / (0.866 * CONSIGNE_MAX);
-  consigne_y *= RAYON_ROUES * VITESSE_MAX_MOTEURS / (0.866 * CONSIGNE_MAX);
-  consigne_rotation *= RAYON_ROUES * VITESSE_MAX_MOTEURS / (0.866 * CONSIGNE_MAX);
+  consigne_x = map(consigne_x, -255, 255, -115, 115);
+  consigne_y = map(consigne_y, -255, 255, -115, 115);
+  consigne_rotation = map(consigne_rotation, -255, 255, -115, 115);;
+
+  /*
+  Serial.print("consigne_x = ");
+  Serial.print(consigne_x);
+  Serial.print("consigne_y = ");
+  Serial.println(consigne_y);
+  Serial.print("consigne_rotation = ");
+  Serial.println(consigne_rotation);*/
 
   /*
   float terme_rotation = COEFFICIENT_REDUCTION_ROT * RAYON_PLATEFORME * consigne_rotation / RAYON_ROUES;
@@ -123,25 +131,42 @@ void calcule_consignes_moteurs(
   float terme_y1  = consigne_y * 0.5 / RAYON_ROUES;
   float terme_y2  = terme_y1 * 2;*/
 
+  float consigne_moteur_A_x = consigne_x;
+  float consigne_moteur_B_x = consigne_x;
+  float consigne_moteur_C_x = consigne_x;
+  float consigne_moteur_D_x = -consigne_x;
+
   float consigne_moteur_A_y = consigne_y;
   float consigne_moteur_B_y = -consigne_y;
   float consigne_moteur_C_y = -consigne_y;
   float consigne_moteur_D_y = -consigne_y;
 
-  consigne_moteur_A = consigne_y;
-  consigne_moteur_B = consigne_y;
-  consigne_moteur_C = -consigne_y;
-  consigne_moteur_D = -consigne_y;
+  float consigne_moteur_A_rotation = -consigne_rotation;
+  float consigne_moteur_B_rotation = consigne_rotation;
+  float consigne_moteur_C_rotation = -consigne_rotation;
+  float consigne_moteur_D_rotation = consigne_rotation;
+
+  consigne_moteur_A = consigne_moteur_A_x + consigne_moteur_A_y + consigne_moteur_A_rotation;
+  consigne_moteur_B = consigne_moteur_B_x + consigne_moteur_B_y + consigne_moteur_B_rotation;
+  consigne_moteur_C = consigne_moteur_C_x + consigne_moteur_C_y + consigne_moteur_C_rotation;
+  consigne_moteur_D = consigne_moteur_D_x + consigne_moteur_D_y + consigne_moteur_D_rotation;
 
   /*
+  float k = VITESSE_MAX_MOTEURS / max(consigne_moteur_A, max(consigne_moteur_B, max(consigne_moteur_C, consigne_moteur_D)));
+
+  consigne_moteur_A *= k;
+  consigne_moteur_B *= k;
+  consigne_moteur_C *= k;
+  consigne_moteur_D *= k;*/
+
   // Normalisation si dépassement de la vitesse max
-  float consigne_moteurs_max = max(max(consigne_moteur_A, consigne_moteur_B), consigne_moteur_C);
+  float consigne_moteurs_max = max(max(max(consigne_moteur_A, consigne_moteur_B), consigne_moteur_C), consigne_moteur_D);
   if (consigne_moteurs_max > VITESSE_MAX_MOTEURS) {
     float correction = VITESSE_MAX_MOTEURS / consigne_moteurs_max;
     consigne_moteur_A *= correction;
     consigne_moteur_B *= correction;
     consigne_moteur_C *= correction;
-  }*/
+  }
 }
 
 // -------------------------------------------------------------------------------------------------------------------
@@ -151,12 +176,14 @@ void loop() {
   float consigne_y         = commande_dr_ga.mapDeadzone(-CONSIGNE_MAX, CONSIGNE_MAX, ZONE_MORTE_TELECOMMANDE);
   float consigne_rotation  = commande_rotation.mapDeadzone(-CONSIGNE_MAX, CONSIGNE_MAX, ZONE_MORTE_TELECOMMANDE);
 
-  //Serial.print("consigne_x = ");
-  //Serial.println(consigne_x);
+  Serial.print("consigne_x = ");
+  Serial.print(consigne_x);
+  Serial.print(" ; ");
   Serial.print("consigne_y = ");
-  Serial.println(consigne_y);
-  //Serial.print("consigne_rotation = ");
-  //Serial.println(consigne_rotation);
+  Serial.print(consigne_y);
+  Serial.print(" ; ");
+  Serial.print("consigne_rotation = ");
+  Serial.println(consigne_rotation);
   float consigne_moteur_A, consigne_moteur_B, consigne_moteur_C, consigne_moteur_D;
 
   
@@ -164,6 +191,18 @@ void loop() {
     consigne_x, consigne_y, consigne_rotation, 
     consigne_moteur_A, consigne_moteur_B, consigne_moteur_C, consigne_moteur_D
   );
+  /*
+  Serial.print("consigne_A = ");
+  Serial.print(consigne_moteur_A);
+  Serial.print(" ; ");
+  Serial.print("consigne_B = ");
+  Serial.print(consigne_moteur_B);
+  Serial.print(" ; ");
+  Serial.print("consigne_C = ");
+  Serial.print(consigne_moteur_C);
+  Serial.print(" ; ");
+  Serial.print("consigne_D = ");
+  Serial.println(consigne_moteur_D);*/
   
   set_vitesse(consigne_moteur_A, consigne_moteur_B, consigne_moteur_C, consigne_moteur_D);
 }
