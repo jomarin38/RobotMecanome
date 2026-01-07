@@ -27,8 +27,8 @@
 #define PIN_SENS_MOTEUR_D     7
 
 // -------------------------------------- Gestion de la télécommande -------------------------------------------------
-#define PULSE_MINIMUM             1153  // Durée minimum des pulses du récepteur de télécommande (µs)
-#define PULSE_MAXIMUM             1847  // Durée maximum des pulses du récepteur de télécommande (µs)
+#define PULSE_MINIMUM             850  // Durée minimum des pulses du récepteur de télécommande (µs)
+#define PULSE_MAXIMUM             2150  // Durée maximum des pulses du récepteur de télécommande (µs)
 
 #define ZONE_MORTE_TELECOMMANDE   0.05   // Ratio de la pleine échelle en dessous duquel on ne bouge pas
 
@@ -39,7 +39,7 @@ ServoInputPin<PIN_TELECOMMANDE_DR_GA>     commande_dr_ga(PULSE_MINIMUM, PULSE_MA
 ServoInputPin<PIN_TELECOMMANDE_ROTATION>  commande_rotation(PULSE_MINIMUM, PULSE_MAXIMUM);
 
 // -------------------------------------- Gestion des moteurs --------------------------------------------------------
-#define VITESSE_MAX_MOTEURS           115.0
+#define VITESSE_MAX_MOTEURS           255.0
 #define CONSIGNE_MAX                  255  // Valeur de consigne maximum fournie par la télécommande
 // Coefficients appliqués aux consignes de la télécommande pour ajuster la sensibilité
 #define COEFFICIENT_REDUCTION_AV_AR   1.0 
@@ -113,9 +113,9 @@ void calcule_consignes_moteurs(
   float &consigne_moteur_A, float &consigne_moteur_B, float &consigne_moteur_C, float &consigne_moteur_D)
 {
   // Mise à l'échelle des consignes
-  consigne_x = map(consigne_x, -255, 255, -115, 115);
-  consigne_y = map(consigne_y, -255, 255, -115, 115);
-  consigne_rotation = map(consigne_rotation, -255, 255, -115, 115);;
+  consigne_x = map(consigne_x, -255, 255, -CONSIGNE_MAX, CONSIGNE_MAX);
+  consigne_y = map(consigne_y, -255, 255, -CONSIGNE_MAX, CONSIGNE_MAX);
+  consigne_rotation = map(consigne_rotation, -255, 255, -CONSIGNE_MAX, CONSIGNE_MAX);;
 
   /*
   Serial.print("consigne_x = ");
@@ -141,7 +141,7 @@ void calcule_consignes_moteurs(
   float consigne_moteur_C_y = -consigne_y;
   float consigne_moteur_D_y = -consigne_y;
 
-  float consigne_moteur_A_rotation = -consigne_rotation;
+  float consigne_moteur_A_rotation = consigne_rotation;
   float consigne_moteur_B_rotation = consigne_rotation;
   float consigne_moteur_C_rotation = -consigne_rotation;
   float consigne_moteur_D_rotation = consigne_rotation;
@@ -159,13 +159,33 @@ void calcule_consignes_moteurs(
   consigne_moteur_C *= k;
   consigne_moteur_D *= k;*/
 
+  /*
   // Normalisation si dépassement de la vitesse max
   float consigne_moteurs_max = max(max(max(consigne_moteur_A, consigne_moteur_B), consigne_moteur_C), consigne_moteur_D);
+  float consigne_moteurs_min = min(min(min(consigne_moteur_A, consigne_moteur_B), consigne_moteur_C), consigne_moteur_D);
   if (consigne_moteurs_max > VITESSE_MAX_MOTEURS) {
     float correction = VITESSE_MAX_MOTEURS / consigne_moteurs_max;
     consigne_moteur_A *= correction;
     consigne_moteur_B *= correction;
     consigne_moteur_C *= correction;
+    consigne_moteur_D *= correction;
+  } else if (consigne_moteurs_min < -VITESSE_MAX_MOTEURS) {
+    float correction = VITESSE_MAX_MOTEURS / -consigne_moteurs_min;
+    consigne_moteur_A *= correction;
+    consigne_moteur_B *= correction;
+    consigne_moteur_C *= correction;
+    consigne_moteur_D *= correction;
+  }
+}*/
+
+  // Normalisation si dépassement de la vitesse max
+  float consigne_moteurs_max = max(max(max(abs(consigne_moteur_A), abs(consigne_moteur_B)), abs(consigne_moteur_C)), abs(consigne_moteur_D));
+  if (consigne_moteurs_max > VITESSE_MAX_MOTEURS) {
+    float correction = VITESSE_MAX_MOTEURS / consigne_moteurs_max;
+    consigne_moteur_A *= correction;
+    consigne_moteur_B *= correction;
+    consigne_moteur_C *= correction;
+    consigne_moteur_D *= correction;
   }
 }
 
@@ -175,7 +195,8 @@ void loop() {
   float consigne_x         = commande_av_ar.mapDeadzone(-CONSIGNE_MAX, CONSIGNE_MAX, ZONE_MORTE_TELECOMMANDE);
   float consigne_y         = commande_dr_ga.mapDeadzone(-CONSIGNE_MAX, CONSIGNE_MAX, ZONE_MORTE_TELECOMMANDE);
   float consigne_rotation  = commande_rotation.mapDeadzone(-CONSIGNE_MAX, CONSIGNE_MAX, ZONE_MORTE_TELECOMMANDE);
-
+  
+  /*
   Serial.print("consigne_x = ");
   Serial.print(consigne_x);
   Serial.print(" ; ");
@@ -183,7 +204,7 @@ void loop() {
   Serial.print(consigne_y);
   Serial.print(" ; ");
   Serial.print("consigne_rotation = ");
-  Serial.println(consigne_rotation);
+  Serial.println(consigne_rotation);*/
   float consigne_moteur_A, consigne_moteur_B, consigne_moteur_C, consigne_moteur_D;
 
   
